@@ -3,7 +3,7 @@ import { WhatsAppIcon } from "./icons";
 export default function WhatsAppFloat() {
   return (
     <a
-      href="https://wa.me/919119510459"
+      href="https://wa.me/919119510459?text=Hi%2C%20can%20you%20share%20details%20about%20your%20interior%20design%20services%20and%20consultation%3F"
       target="_blank"
       rel="noreferrer"
       className="wa-float-btn"

@@ -100,7 +100,7 @@ export default function Contact() {
 
             {/* WhatsApp */}
             <a
-              href="https://wa.me/919119510459"
+              href="https://wa.me/919119510459?text=Hi%2C%20can%20you%20share%20details%20about%20your%20interior%20design%20services%20and%20consultation%3F"
               target="_blank" rel="noreferrer"
               className="inline-flex items-center gap-3 px-6 py-3.5 rounded-xl text-white text-sm font-semibold tracking-wide no-underline transition-all duration-200 hover:-translate-y-0.5"
               style={{
