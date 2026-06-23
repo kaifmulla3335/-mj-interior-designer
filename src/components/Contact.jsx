@@ -1,5 +1,11 @@
 import { useState } from "react";
+import emailjs from "@emailjs/browser";
 import { PhoneIcon, EmailIcon, LocationIcon, WhatsAppIcon, ArrowIcon, ChevronIcon } from "./icons";
+
+// EmailJS configuration
+const EJS_SERVICE_ID  = "service_zm7rm4l";
+const EJS_TEMPLATE_ID = "template_rw9fn0o";
+const EJS_PUBLIC_KEY  = "QvgEg5UYgPPnIiZVd";
 
 const contactRows = [
   { Icon: PhoneIcon,    label: "Phone",    value: "+91 91195 10459",         href: "tel:+919119510459"              },
@@ -14,12 +20,50 @@ const inputBase =
   "placeholder:text-[var(--muted)]";
 
 export default function Contact() {
-  const [form, setForm] = useState({ name: "", phone: "", type: "", message: "" });
+  const [form,   setForm]   = useState({ name: "", phone: "", type: "", message: "" });
+  const [status, setStatus] = useState("idle"); // idle | sending | success | error
+  const [errMsg, setErrMsg] = useState("");
 
-  const handleSubmit = () => {
-    const subject = encodeURIComponent(`Interior Design Enquiry — ${form.type || "General"}`);
-    const body = encodeURIComponent(`Hi Muaaj,\n\nName: ${form.name}\nPhone: ${form.phone}\nProject Type: ${form.type}\n\n${form.message}`);
-    window.location.href = `mailto:muaajjamadar3@gmail.com?subject=${subject}&body=${body}`;
+  const handleSubmit = async () => {
+    const phoneDigits = form.phone.replace(/\D/g, "");
+
+    if (!form.name.trim() || !form.message.trim()) {
+      setStatus("error");
+      setErrMsg("Please fill in your name and message.");
+      setTimeout(() => setStatus("idle"), 3000);
+      return;
+    }
+
+    if (form.phone.trim() && form.phone.length !== 10) {
+      setStatus("error");
+      setErrMsg("Please enter a valid 10-digit mobile number.");
+      setTimeout(() => setStatus("idle"), 3000);
+      return;
+    }
+
+    setStatus("sending");
+
+    try {
+      await emailjs.send(
+        EJS_SERVICE_ID,
+        EJS_TEMPLATE_ID,
+        {
+          from_name:    form.name,
+          phone:        form.phone ? `+91 ${form.phone}` : "Not provided",
+          project_type: form.type || "Not specified",
+          message:      form.message,
+          to_email:     "muaajjamadar3@gmail.com",
+        },
+        EJS_PUBLIC_KEY
+      );
+      setStatus("success");
+      setForm({ name: "", phone: "", type: "", message: "" });
+      setTimeout(() => setStatus("idle"), 5000);
+    } catch {
+      setStatus("error");
+      setErrMsg("Something went wrong. Try WhatsApp instead.");
+      setTimeout(() => setStatus("idle"), 4000);
+    }
   };
 
   return (
@@ -155,12 +199,26 @@ export default function Contact() {
                 <label className="block text-[10px] tracking-[0.12em] uppercase text-[var(--muted)] font-semibold mb-2">
                   Phone Number
                 </label>
-                <input
-                  className={inputBase}
-                  placeholder="+91 98765 43210"
-                  value={form.phone}
-                  onChange={e => setForm({ ...form, phone: e.target.value })}
-                />
+                <div className="flex items-center rounded-xl overflow-hidden border border-[var(--border)] focus-within:border-[var(--accent)] focus-within:shadow-[0_0_0_3px_rgba(212,175,55,0.12)] transition-all duration-200"
+                  style={{ background: "var(--surface)" }}>
+                  <span className="px-3 py-3 text-sm font-semibold border-r border-[var(--border)] text-[var(--accent)] bg-[var(--card)] select-none whitespace-nowrap">
+                    +91
+                  </span>
+                  <input
+                    className="flex-1 px-3 py-3 text-sm font-['DM_Sans',sans-serif] outline-none bg-transparent text-[var(--text)] placeholder:text-[var(--muted)]"
+                    placeholder="98765 43210"
+                    value={form.phone}
+                    inputMode="numeric"
+                    maxLength={10}
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setForm({ ...form, phone: val });
+                    }}
+                  />
+                  <span className="pr-3 text-xs text-[var(--muted)] select-none">
+                    {form.phone.length}/10
+                  </span>
+                </div>
               </div>
 
               {/* Project type */}
@@ -203,18 +261,33 @@ export default function Contact() {
                 />
               </div>
 
+              {/* Status messages */}
+              {status === "success" && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium"
+                  style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", color: "#4ade80" }}>
+                  ✓ Message sent! Muaaj will get back to you shortly.
+                </div>
+              )}
+              {status === "error" && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium"
+                  style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171" }}>
+                  ✕ {errMsg}
+                </div>
+              )}
+
               {/* Submit */}
               <button
                 onClick={handleSubmit}
-                className="flex items-center justify-center gap-2.5 w-full py-4 rounded-xl text-sm font-bold tracking-wide text-[#0C0B09] transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+                disabled={status === "sending" || status === "success"}
+                className="flex items-center justify-center gap-2.5 w-full py-4 rounded-xl text-sm font-bold tracking-wide text-[#0C0B09] transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:translate-y-0"
                 style={{
                   background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
                   boxShadow: "0 8px 24px rgba(212,175,55,0.30)",
                 }}
-                onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 12px 32px rgba(212,175,55,0.45)")}
+                onMouseEnter={e => { if (status === "idle") e.currentTarget.style.boxShadow = "0 12px 32px rgba(212,175,55,0.45)"; }}
                 onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 8px 24px rgba(212,175,55,0.30)")}
               >
-                Send Enquiry <ArrowIcon />
+                {status === "sending" ? "Sending…" : status === "success" ? "Sent ✓" : (<>Send Enquiry <ArrowIcon /></>)}
               </button>
 
             </div>
